@@ -1923,10 +1923,12 @@ VeloxQueryPlanConverterBase::toVeloxQueryPlan(
   for (const auto& groupingSet : node->groupingSets) {
     std::vector<core::FieldAccessTypedExprPtr> groupingKeys;
     groupingKeys.reserve(groupingSet.size());
+    // Use the output key name in the GroupingSet as there could be
+    // multiple output keys mapping to the same input column.
     for (const auto& groupingKey : groupingSet) {
       groupingKeys.emplace_back(std::make_shared<core::FieldAccessTypedExpr>(
           stringToType(groupingKey.type),
-          node->groupingColumns.at(groupingKey).name));
+          groupingKey.name));
     }
     groupingSets.emplace_back(std::move(groupingKeys));
   }

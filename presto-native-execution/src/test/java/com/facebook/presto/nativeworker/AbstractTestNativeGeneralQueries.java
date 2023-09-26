@@ -943,6 +943,10 @@ public abstract class AbstractTestNativeGeneralQueries
     }
 
     @Test
+    public void testGroupingSets() {
+        assertQuery("SELECT lna, lnb, SUM(quantity) FROM (SELECT linenumber lna, linenumber lnb, CAST(quantity AS BIGINT) quantity FROM lineitem) GROUP BY GROUPING SETS ((lna, lnb), (lna), (lnb), ())");
+    }
+    @Test
     public void testBucketedExecution()
     {
         // Run aggregation query that groups by a bucketed column.
