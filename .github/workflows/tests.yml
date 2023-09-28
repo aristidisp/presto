@@ -9,7 +9,7 @@ env:
   MAVEN_OPTS: "-Xmx1024M -XX:+ExitOnOutOfMemoryError"
   MAVEN_INSTALL_OPTS: "-Xmx2G -XX:+ExitOnOutOfMemoryError"
   MAVEN_FAST_INSTALL: "-B -V --quiet -T C1 -DskipTests -Dair.check.skip-all -Dmaven.javadoc.skip=true"
-  MAVEN_TEST: "-B -Dair.check.skip-all -Dmaven.javadoc.skip=true -DLogTestDurationListener.enabled=true --fail-at-end"
+  MAVEN_TEST: "-B -Dair.check.skip-all -Dmaven.javadoc.skip=true -DLogTestDurationListener.enabled=true --fail-at-end -javaagent:/home/runner/.datadog/dd-java-agent.jar"
   RETRY: .github/bin/retry
 
 jobs:
@@ -71,6 +71,10 @@ jobs:
       group: ${{ github.workflow }}-test-${{ matrix.modules }}-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     steps:
+      - name: Set up Datadog Integration
+        run: |
+          mkdir -p $HOME/.datadog/
+          wget -O $HOME/.datadog/dd-java-agent.jar https://dtdg.co/latest-java-tracer
       - uses: actions/checkout@v2
         if: needs.changes.outputs.codechange == 'true'
       - uses: actions/setup-java@v1
@@ -96,4 +100,10 @@ jobs:
           ./mvnw install ${MAVEN_FAST_INSTALL} -am -pl $(echo '${{ matrix.modules }}' | cut -d' ' -f1)
       - name: Maven Tests
         if: needs.changes.outputs.codechange == 'true'
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_CIVISIBILITY_ENABLED: ${{ env.DD_CIVISIBILITY_ENABLED }}
+          DD_CIVISIBILITY_AGENTLESS_ENABLED: ${{ env.DD_CIVISIBILITY_AGENTLESS_ENABLED }}
+          DD_ENV: github-ci
+          DD_SERVICE: presto-flaky-tests
         run: ./mvnw test ${MAVEN_TEST} -pl ${{ matrix.modules }}
